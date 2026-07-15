@@ -1,0 +1,22 @@
+[project]
+name = "lc_project"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "chainlit>=2.11.1",
+    "langchain>=1.3.11",
+    "langchain-deepseek>=1.1.0",
+    "langchain-openai>=1.3.3",
+    "langchain-tavily>=0.2.18",
+    "langgraph>=1.2.7",
+    "langgraph-checkpoint-postgres>=3.1.0",
+    "langgraph-checkpoint-sqlite>=3.1.0",
+    "notebook>=7.6.0",
+    "openai>=2.44.0",
+    "python-dotenv>=1.2.2",
+]
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
