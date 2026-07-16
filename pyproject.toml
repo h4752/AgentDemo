@@ -1,20 +1,27 @@
 [project]
-name = "lc_project"
+name = "research-assistant-agent"
 version = "0.1.0"
-description = "Add your description here"
+description = "基于 LangChain + LangGraph 构建的智能研究助手 Agent，支持网页搜索、笔记管理和多轮对话记忆"
+authors = [
+    { name = "30125", email = "3012546202@qq.com" }
+]
+readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.13"
 dependencies = [
     "chainlit>=2.11.1",
     "langchain>=1.3.11",
     "langchain-deepseek>=1.1.0",
-    "langchain-openai>=1.3.3",
     "langchain-tavily>=0.2.18",
     "langgraph>=1.2.7",
-    "langgraph-checkpoint-postgres>=3.1.0",
     "langgraph-checkpoint-sqlite>=3.1.0",
-    "notebook>=7.6.0",
-    "openai>=2.44.0",
     "python-dotenv>=1.2.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24.0",
 ]
 
 [[tool.uv.index]]
