@@ -37,14 +37,14 @@ LangGraph SqliteSaver → SQLite 持久化记忆
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/你的用户名/langchain-agent-demo.git
+git clone https://github.com/h4752/AgentDemo.git
 cd langchain-agent-demo
 ```
 
 ### 2. 安装依赖
 
 ```bash
-pip install langchain langchain-deepseek langchain-tavily langgraph langgraph-checkpoint-sqlite chainlit python-dotenv
+uv add langchain langchain-deepseek langchain-tavily langgraph langgraph-checkpoint-sqlite chainlit python-dotenv
 ```
 
 ### 3. 配置 API Key

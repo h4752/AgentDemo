@@ -18,26 +18,30 @@ tavily = TavilySearch(
 )
 
 @tool
-def web_search(query: str):
-    """这是一个网页搜索工具"""
-    response = tavily.invoke(query)
-    ls = []
-    for result in response['results']:
-        ls.append({"url": result['url'], "title": result['title'], "content": result['content']})
-    return ls
+def web_search(query: str) -> str:
+  """这是一个网页搜索工具"""
+  response = tavily.invoke(query)
+  results = []
+  for i, result in enumerate(response['results'], 1):
+      results.append(
+          f"{i}. {result['title']}\n"
+          f"   URL: {result['url']}\n"
+          f"   {result['content']}"
+      )
+  return "\n\n".join(results) if results else "未找到相关搜索结果"
 
 @tool
-def save_research_note(title, content: str, path = "./notes"):
+def save_research_note(title: str, content: str, path: str = "./notes") -> str:
     """将笔记保存到指定的路径文件夹内,文件名为标题名"""
     Path(path).mkdir(parents=True, exist_ok=True)
     filepath = f"{path}/{title}.md"
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
 
-    return f"笔记已保存: {filepath}"
+    return f"笔记已保存至: {filepath}"
 
 @tool
-def list_notes(path = "./notes"):
+def list_notes(path: str = "./notes") -> str:
     """列出已有笔记"""
     Path(path).mkdir(parents=True, exist_ok=True)
     files = os.listdir(path)
@@ -45,29 +49,27 @@ def list_notes(path = "./notes"):
     for file in files:
         ls.append(file)
 
-    return f"暂无笔记" if not ls else ls
+    return f"暂无笔记" if not ls else '\n'.join(ls)
+
 
 @tool
-def read_notes(title, path = "./notes"):
+def read_notes(title: str, path: str = "./notes") -> str:
     """根据特定的标题检索笔记"""
     Path(path).mkdir(parents=True, exist_ok=True)
     files = os.listdir(path)
-    ls = []
-    lt = []
-    for file in files:
-        if file.startswith(title):
-            ls.append(file)
+    matched = [f for f in files if f.startswith(title)]
 
-    if not ls:
+    if not matched:
         return f"未找到 {title} 相关笔记"
-    else:
-        for file in ls:
-            file_path = f"{path}/{file}"
-            with open(file_path, "r", encoding="utf-8") as f:
-                content = f.read()
-                lt.append({"title": file, "content": content})
 
-        return lt
+    results = []
+    for file in matched:
+        file_path = f"{path}/{file}"
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            results.append(f"--- {file} ---\n{content}")
+
+    return "\n\n".join(results)
 
 SYSTEM_PROMPT =  """你是一个专业的研究助手，善于运用各种工具来帮助用户高效地检索信息和整理知识。
 
@@ -93,7 +95,7 @@ SYSTEM_PROMPT =  """你是一个专业的研究助手，善于运用各种工具
 
 @cl.on_chat_start
 async def start():
-    conn = sqlite3.connect("checkpoints.db", check_same_thread=False)
+    conn = sqlite3.connect("resources/checkpoint.db", check_same_thread=False)
     checkpointer = SqliteSaver(conn)
     checkpointer.setup()
 
