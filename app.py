@@ -1,5 +1,5 @@
 import chainlit as cl
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessageChunk, ToolMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from chainlit.element import Element
 from src.agent import create_research_agent
@@ -47,9 +47,12 @@ async def on_message(message: cl.Message) -> None:
 
     config = {"configurable": {"thread_id": cl.context.session.id}}
 
-    # 使用流式模式输出
+    # 流式输出，只显示 AI 文本回复，工具调用/结果用 Step 折叠展示
     msg = cl.Message(content="")
     await msg.send()
+
+    # 跟踪工具调用：{tool_call_id: Step}
+    tool_steps: dict[str, cl.Step] = {}
 
     try:
         async for chunk, metadata in agent.astream(
@@ -57,14 +60,44 @@ async def on_message(message: cl.Message) -> None:
             config=config,
             stream_mode="messages",
         ):
-            # 在 stream_mode="messages" 下，chunk 是 (message_chunk, metadata) 元组
-            # message_chunk 包含增量内容
-            if hasattr(chunk, "content") and chunk.content:
-                # 只追加文本内容，跳过 tool_calls 等非文本 chunk
-                if isinstance(chunk.content, str):
-                    await msg.stream_token(chunk.content)
+            # ---- 跳过工具结果（ToolMessage），不直接显示 ----
+            if isinstance(chunk, ToolMessage):
+                # 将工具输出写入对应的 Step
+                tc_id = getattr(chunk, "tool_call_id", None)
+                if tc_id and tc_id in tool_steps:
+                    tool_steps[tc_id].output = (
+                        str(chunk.content)[:2000]
+                    )
+                    await tool_steps[tc_id].update()
+                continue
+
+            # ---- 只处理 AI 消息 ----
+            if not isinstance(chunk, AIMessageChunk):
+                continue
+
+            # ---- 工具调用：创建折叠 Step ----
+            if chunk.tool_calls:
+                for tc in chunk.tool_calls:
+                    tc_name = tc.get("name", "unknown")
+                    tc_id = tc.get("id", "")
+                    if tc_id and tc_id not in tool_steps:
+                        step = cl.Step(
+                            name=f"🔧 {tc_name}",
+                            type="tool",
+                            parent_id=msg.id,
+                        )
+                        step.input = str(tc.get("args", {}))[:1000]
+                        tool_steps[tc_id] = step
+                        await step.send()
+
+            # ---- AI 文本回复：流式输出给用户 ----
+            if chunk.content and isinstance(chunk.content, str):
+                await msg.stream_token(chunk.content)
+
     except Exception as e:
-        await msg.update(content=f"处理消息时出错: {type(e).__name__} - {str(e)}")
+        await msg.update(
+            content=f"❌ 处理消息时出错: {type(e).__name__} - {str(e)}"
+        )
 
     await msg.update()
 
