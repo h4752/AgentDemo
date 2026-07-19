@@ -198,10 +198,34 @@ class KnowledgeBase:
                 return "python-docx is not installed. Run: pip install python-docx"
 
             doc = Document(str(path))
-            paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
-            if not paragraphs:
-                return f"No extractable text found in: {file_path}"
-            text = "\n".join(paragraphs)
+
+            # 段落文本
+            parts: list[str] = []
+            for p in doc.paragraphs:
+                if p.text.strip():
+                    parts.append(p.text.strip())
+
+            # 表格中的文本
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        if cell.text.strip():
+                            parts.append(cell.text.strip())
+
+            if not parts:
+                # 最后兜底：尝试直接从 XML body 提取
+                body = doc.element.body
+                raw_text = "".join(body.itertext()).strip()
+                if raw_text:
+                    parts.append(raw_text)
+
+            if not parts:
+                return (
+                    f"No extractable text found in: {file_path}. "
+                    "The document may contain only images, scanned pages, or be corrupted."
+                )
+
+            text = "\n".join(parts)
             return self.index_texts([text], sources=[source_name])
 
         return f"Unsupported file format: {suffix}"

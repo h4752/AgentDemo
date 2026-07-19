@@ -1,3 +1,4 @@
+import asyncio
 import chainlit as cl
 from langchain_core.messages import HumanMessage, AIMessageChunk, ToolMessage
 from langgraph.checkpoint.memory import InMemorySaver
@@ -95,9 +96,10 @@ async def on_message(message: cl.Message) -> None:
                 await msg.stream_token(chunk.content)
 
     except Exception as e:
-        await msg.update(
-            content=f"❌ 处理消息时出错: {type(e).__name__} - {str(e)}"
+        msg.content = (
+            f"❌ 处理消息时出错: {type(e).__name__} - {str(e)}"
         )
+        await msg.update()
 
     await msg.update()
 
@@ -118,9 +120,23 @@ async def _handle_uploaded_files(
         await status_msg.send()
 
         try:
-            result = index_file(file.path, source_name=file.name)
-            await status_msg.update(content=f"✅ {result}")
-        except Exception as e:
-            await status_msg.update(
-                content=f"❌ 索引 `{file.name}` 失败: {type(e).__name__} - {str(e)}"
+            # 在线程池中运行同步 I/O 操作，避免阻塞事件循环
+            result = await asyncio.to_thread(
+                index_file, file.path, source_name=file.name
             )
+            # 将技术性结果翻译为更友好的提示
+            chunk_count = ""
+            for word in result.split():
+                if word.isdigit():
+                    chunk_count = word
+                    break
+            status_msg.content = (
+                f"✅ `{file.name}` 已索引完成，共 {chunk_count} 个文本片段。\n\n"
+                f"你现在可以提问了，例如：「{file.name} 里讲了什么？」"
+            )
+            await status_msg.update()
+        except Exception as e:
+            status_msg.content = (
+                f"❌ 索引 `{file.name}` 失败: {type(e).__name__} - {str(e)}"
+            )
+            await status_msg.update()
