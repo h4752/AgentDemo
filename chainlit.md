@@ -1,14 +1,13 @@
-# Welcome to Chainlit! 🚀🤖
+# 智能研究助手 🧠
 
-Hi there, Developer! 👋 We're excited to have you on board. Chainlit is a powerful tool designed to help you prototype, debug and share applications built on top of LLMs.
+基于 LangChain + LangGraph 构建，支持：
 
-## Useful Links 🔗
+- 🔍 **网页搜索**：实时检索互联网最新信息
+- 📚 **知识库检索**：搜索已索引的内部文档（Milvus 向量数据库）
+- 📤 **文件上传**：上传 `.txt` `.md` `.pdf` `.docx` 自动索引
+- 📝 **笔记管理**：保存、列出、阅读研究笔记
+- 💬 **多轮对话**：上下文记忆，持续深入讨论
 
-- **Documentation:** Get started with our comprehensive [Chainlit Documentation](https://docs.chainlit.io) 📚
-- **Discord Community:** Join our friendly [Chainlit Discord](https://discord.gg/k73SQ3FyUh) to ask questions, share your projects, and connect with other developers! 💬
+## 开始使用
 
-We can't wait to see what you create with Chainlit! Happy coding! 💻😊
-
-## Welcome screen
-
-To modify the welcome screen, edit the `chainlit.md` file at the root of your project. If you do not want a welcome screen, just leave this file empty.
+直接输入问题，或上传文件后询问相关内容。
