@@ -2,7 +2,19 @@ import os
 from pathlib import Path
 from langchain_core.tools import tool
 from langchain_tavily import TavilySearch
-from src.config import TAVILY_API_KEY, TAVILY_MAX_RESULTS, NOTES_PATH
+from src.config import (
+    TAVILY_API_KEY,
+    TAVILY_MAX_RESULTS,
+    NOTES_PATH,
+    MILVUS_URL,
+    COLLECTION_NAME,
+    CHUNK_SIZE,
+    CHUNK_OVERLAP,
+    TOP_K,
+    EMBEDDING_MODEL,
+    DASHSCOPE_API_KEY,
+)
+from src.rag import KnowledgeBase
 
 tavily = TavilySearch(
     max_results=TAVILY_MAX_RESULTS,
@@ -75,3 +87,46 @@ def read_notes(title: str, path: str = "./notes") -> str:
         return "\n\n".join(results)
     except Exception as e:
         return f"读取笔记失败: {type(e).__name__} - {str(e)}"
+
+
+# ------------------------------------------------------------------
+# 知识库工具 —— 懒初始化单例
+# ------------------------------------------------------------------
+
+_kb = None
+
+
+def _get_kb() -> KnowledgeBase:
+    """懒初始化 KnowledgeBase 实例，避免 import 时连接 Milvus。"""
+    global _kb
+    if _kb is None:
+        _kb = KnowledgeBase(
+            milvus_url=MILVUS_URL,
+            collection_name=COLLECTION_NAME,
+            chunk_size=CHUNK_SIZE,
+            chunk_overlap=CHUNK_OVERLAP,
+            top_k=TOP_K,
+            embedding_model_name=EMBEDDING_MODEL,
+            dashscope_api_key=DASHSCOPE_API_KEY,
+        )
+    return _kb
+
+
+@tool
+def index_to_knowledge_base(content: str, source: str = "agent") -> str:
+    """将文本内容索引到本地知识库。当用户要求保存信息到知识库、记录重要资料、或搜索到需要保留的内容时使用。"""
+    try:
+        kb = _get_kb()
+        return kb.index_texts([content], sources=[source])
+    except Exception as e:
+        return f"索引到知识库失败: {type(e).__name__} - {str(e)}"
+
+
+@tool
+def search_knowledge_base(query: str) -> str:
+    """搜索本地知识库，查找与查询相关的文档片段。用于检索已索引的内部文档、技术资料或历史信息。"""
+    try:
+        kb = _get_kb()
+        return kb.retrieve(query)
+    except Exception as e:
+        return f"知识库搜索失败: {type(e).__name__} - {str(e)}"
